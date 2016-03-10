@@ -89,7 +89,7 @@
 
 - (void)didMoveToSuperview
 {
-    [self reload];
+    //[self reload];
 }
 
 - (void)centerCurrentView

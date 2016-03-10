@@ -9,11 +9,12 @@
 #import "LibraryAPI.h"
 
 #import "PersistencyManager.h"
-#import "HTTPClient.h"
+//#import "HTTPClient.h"
+#import "UIImageView+WebCache.h"
 
 @interface LibraryAPI () {
     PersistencyManager *persistencyManager;
-    HTTPClient *httpClient;
+    //HTTPClient *httpClient;
     BOOL isOnline;
 }
 
@@ -41,7 +42,7 @@
     self = [super init];
     if (self) {
         persistencyManager = [[PersistencyManager alloc] init];
-        httpClient = [[HTTPClient alloc] init];
+        //httpClient = [[HTTPClient alloc] init];
         isOnline = NO;
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(downloadImage:) name:@"BLDownloadImageNotification" object:nil];
     }
@@ -59,7 +60,7 @@
     [persistencyManager addAlbum:album atIndex:index];
     if (isOnline)
     {
-        [httpClient postRequest:@"/api/addAlbum" body:[album description]];
+        //[httpClient postRequest:@"/api/addAlbum" body:[album description]];
     }
 }
 
@@ -68,7 +69,7 @@
     [persistencyManager deleteAlbumAtIndex:index];
     if (isOnline)
     {
-        [httpClient postRequest:@"/api/deleteAlbum" body:[@(index) description]];
+        //[httpClient postRequest:@"/api/deleteAlbum" body:[@(index) description]];
     }
 }
 
@@ -79,26 +80,30 @@
 
 - (void)downloadImage:(NSNotification*)notification
 {
+    
     // 1
     UIImageView *imageView = notification.userInfo[@"imageView"];
     NSString *coverUrl = notification.userInfo[@"coverUrl"];
     
-    // 2
-    imageView.image = [persistencyManager getImage:[coverUrl lastPathComponent]];
+    // 框架的词方法的功能已经可以替代注释掉的代码的功能
+    [imageView sd_setImageWithURL:[NSURL URLWithString:coverUrl] placeholderImage:nil];
     
-    if (imageView.image == nil)
-    {
-        // 3
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            UIImage *image = [httpClient downloadImage:coverUrl];
-            
-            // 4
-            dispatch_sync(dispatch_get_main_queue(), ^{
-                imageView.image = image;
-                [persistencyManager saveImage:image filename:[coverUrl lastPathComponent]];
-            });
-        });
-    }    
+    //    // 2 从缓存或者沙盒中读取图片
+    //    imageView.image = [persistencyManager getImage:[coverUrl lastPathComponent]];
+    //
+    //    if (imageView.image == nil)
+    //    {
+    //        // 3 当缓存或者沙盒中图片不存在的时候，远程多线程下载图片。
+    //        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    //            UIImage *image = [httpClient downloadImage:coverUrl];
+    //
+    //            // 4 图片下载完毕后需要在主线程中更行UI，并保存图片到沙盒和刷新缓存
+    //            dispatch_sync(dispatch_get_main_queue(), ^{
+    //                imageView.image = image;
+    //                [persistencyManager saveImage:image filename:[coverUrl lastPathComponent]];
+    //            });
+    //        });
+    //    }
 }
 
 - (void)saveAlbums

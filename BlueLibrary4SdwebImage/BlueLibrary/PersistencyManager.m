@@ -11,6 +11,10 @@
 @interface PersistencyManager () {
     // an array of all albums
     NSMutableArray *albums;
+    
+    // 图片缓存
+    NSMutableDictionary *imageCache;
+    
 }
 @end
 
@@ -21,6 +25,11 @@
 {
     self = [super init];
     if (self) {
+        
+        // 初始化图片缓存
+        imageCache = [NSMutableDictionary dictionary];
+        
+        // 当归档的数据加载进内存
         NSData *data = [NSData dataWithContentsOfFile:[NSHomeDirectory() stringByAppendingString:@"/Documents/albums.bin"]];
         albums = [NSKeyedUnarchiver unarchiveObjectWithData:data];
         if (albums == nil)
@@ -60,6 +69,12 @@
 
 - (void)saveImage:(UIImage*)image filename:(NSString*)filename
 {
+    // 进到这里可以认为图片刚从往下下载了
+    NSLog(@"Get the image:%@ from internet!", filename);
+    
+    // 将图片放到缓存中
+    [imageCache setObject:image forKey:filename];
+    
     filename = [NSHomeDirectory() stringByAppendingFormat:@"/Documents/%@", filename];
     NSData *data = UIImagePNGRepresentation(image);
     [data writeToFile:filename atomically:YES];
@@ -67,9 +82,26 @@
 
 - (UIImage*)getImage:(NSString*)filename
 {
+    NSString *fileName = filename;
+    // 先从缓存中获取数据，如果有就直接返回
+    UIImage *image = [imageCache objectForKey:filename];
+    if (image) {
+        NSLog(@"Get the image:%@ from cache!", filename);
+        return image;
+    }
     filename = [NSHomeDirectory() stringByAppendingFormat:@"/Documents/%@", filename];
     NSData *data = [NSData dataWithContentsOfFile:filename];
-    return [UIImage imageWithData:data];
+    image = [UIImage imageWithData:data];
+    
+    // 当图片在沙盒中，但是没有在缓存中，将图片放到缓存
+    if (image)
+    {
+        NSLog(@"Get the image：%@ from sandbox!", fileName);
+        // 将图片放到缓存中
+        [imageCache setObject:image forKey:fileName];
+    }
+    
+    return image;
 }
 
 - (void)saveAlbums
